@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  employee-mysql:
+    image: mysql:8.0
+    container_name: employee-mysql
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "${MYSQL_PORT}:3306"
+    volumes:
+      - ./employee-sample-database/mysql/dataset_small:/docker-entrypoint-initdb.d
+      - mysql-data:/var/lib/mysql
+    networks:
+      - employee-net
+
+  employee-postgres:
+    image: postgres:15
+    container_name: employee-postgres
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    volumes:
+      - ./employee-sample-database/postgres/dataset_small:/docker-entrypoint-initdb.d
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - employee-net
+
+volumes:
+  mysql-data:
+  postgres-data:
+
+networks:
+  employee-net:
+    driver: bridge
