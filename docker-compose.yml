@@ -27,6 +27,24 @@ services:
     networks:
       - employee-net
 
+  imdb-mysql:
+    image: mysql:8.0
+    container_name: imdb-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: imdb
+    
+    ports:
+      - "${IMDB_MYSQL_PORT:-56583}:3306"
+    
+    volumes:
+      - ./Db-IMDB-Assignment:/docker-entrypoint-initdb.d
+      - imdb-mysql-data:/var/lib/mysql
+    
+    networks:
+      - employee-net
+
 volumes:
   mysql-data:
   postgres-data:

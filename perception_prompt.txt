@@ -1,0 +1,112 @@
+
+You are an AI Expert that works on predominantly two databases [Employee and IMDB database]. Your primary role is to extract key information
+and facts regarding sql query operations from the given user-input.
+
+Available tools: 
+
+Input: "Original User Query: List all the directors who directed a 'Comedy' movie in a leap year. (You need to check that the genre is 'Comedy’ and year is a leap year) Your query should return director name, the movie name, and the year.
+
+Your previous Execution Trace is given below: 
+
+Iteration:0 
+
+Perception: 
+
+ Extract database, table, and column information related to the query. 
+
+Tool_Name: 
+
+get_imdb_table_names
+
+Result: 
+
+Movie, Genre, Language, Country, Location, M_Location, M_Country, M_Language, M_Genre, Person, M_Producer, M_Director, M_Cast
+
+Iteration:1 
+
+Perception: 
+
+ Extract columns from the IMDB database relevant to the query. 
+
+Tool_Name: 
+
+get_table_schema
+
+Result: 
+
+|   cid | name      | type    |   notnull | dflt_value   |   pk |
+|------:|:----------|:--------|----------:|:-------------|-----:|
+|     0 | index     | INTEGER |         0 |              |    0 |
+|     1 | MID       | TEXT    |         0 |              |    0 |
+|     2 | title     | TEXT    |         0 |              |    0 |
+|     3 | year      | TEXT    |         0 |              |    0 |
+|     4 | rating    | REAL    |         0 |              |    0 |
+|     5 | num_votes | INTEGER |         0 |              |    0 |
+
+Iteration:2 
+
+Perception: 
+
+ Extract schema for the M_Director table in the IMDB database. 
+
+Tool_Name: 
+
+get_table_schema
+
+Result: 
+
+|   cid | name   | type    |   notnull | dflt_value   |   pk |
+|------:|:-------|:--------|----------:|:-------------|-----:|
+|     0 | index  | INTEGER |         0 |              |    0 |
+|     1 | MID    | TEXT    |         0 |              |    0 |
+|     2 | PID    | TEXT    |         0 |              |    0 |
+|     3 | ID     | INTEGER |         0 |              |    0 |
+
+Iteration:3 
+
+Perception: 
+
+ Extract schema for the Genre table in the IMDB database. 
+
+Tool_Name: 
+
+get_table_schema
+
+Result: 
+
+|   cid | name   | type    |   notnull | dflt_value   |   pk |
+|------:|:-------|:--------|----------:|:-------------|-----:|
+|     0 | index  | INTEGER |         0 |              |    0 |
+|     1 | Name   | TEXT    |         0 |              |    0 |
+|     2 | GID    | INTEGER |         0 |              |    0 |
+
+Iteration:4 
+
+Perception: 
+
+ Identify the schema for the Person table in the IMDB database to extract director's name. 
+
+Tool_Name: 
+
+get_table_schema
+
+Result: 
+
+|   cid | name   | type    |   notnull | dflt_value   |   pk |
+|------:|:-------|:--------|----------:|:-------------|-----:|
+|     0 | index  | INTEGER |         0 |              |    0 |
+|     1 | PID    | TEXT    |         0 |              |    0 |
+|     2 | Name   | TEXT    |         0 |              |    0 |
+|     3 | Gender | TEXT    |         0 |              |    0 |
+
+If this fully answers the task, return:                     FINAL_ANSWER: your answer Otherwise, return the next FUNCTION_CALL.
+
+"
+
+Return the response as a Python dictionary with keys:
+- current_step_perception: (brief phrase about what to do in this iteration/step)
+- entities: a list of strings representing the database info, table information, and column information. [column name, table name, db name]
+- tool_hint: (name of the MCP tool that might be useful, if any or 'None')
+- previous_tool_output: "Yes" or "No"
+
+Output only the dictionary on a single line. Do NOT wrap it in ```json or other formatting. Ensure `entities` is a list of strings, not a dictionary.
