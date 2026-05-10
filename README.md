@@ -124,7 +124,7 @@ As part of the project's rigorous scientific methodology, a custom foundational 
 
 ### Prerequisites
 - [Ollama](https://ollama.com/) installed and running locally
-- Python 3.10+
+- Python 3.11+
 - Database connection (PostgreSQL, MySQL, SQLite)
 
 ### 1. Model Initialization
