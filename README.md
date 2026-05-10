@@ -1,4 +1,4 @@
-# Enterprise Text-to-SQL & Document VQA Multi-Agent System
+# Text-to-SQL & Document VQA Multi-Agent System
 
 ![Architecture](https://img.shields.io/badge/Architecture-Multi--Agent-blue)
 ![Database](https://img.shields.io/badge/Database-Agnostic-success)
