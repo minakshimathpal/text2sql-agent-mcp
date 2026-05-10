@@ -84,14 +84,14 @@ CREATE TABLE title (
 
 CREATE TABLE salary (
 	emp_no      INT NOT NULL,
-	amount      INT NOT NULL,
+	salary      INT NOT NULL,
 	from_date   DATE NOT NULL,
 	to_date     DATE NOT NULL,
 	FOREIGN KEY (emp_no) REFERENCES employee (emp_no) ON DELETE CASCADE,
 	PRIMARY KEY (emp_no, from_date)
 );
 
-CREATE INDEX idx_salary_amount ON salary (amount);
+CREATE INDEX idx_salary_salary ON salary (salary);
 
 CREATE TABLE audit (
     id SERIAL PRIMARY KEY,
@@ -122,18 +122,18 @@ CREATE POLICY audit_insert_system ON audit
 
 CREATE OR REPLACE PROCEDURE simple_salary_update(
     p_emp_no INT,
-    p_amount INT
+    p_salary INT
 )
 LANGUAGE plpgsql
 AS $_$
 BEGIN
     -- Simple update of salary amount
     UPDATE salary 
-    SET amount = p_amount 
+    SET salary = p_salary 
     WHERE emp_no = p_emp_no 
     AND to_date = '9999-01-01';
     
-    RAISE NOTICE 'Updated salary for employee % to $%', p_emp_no, p_amount;
+    RAISE NOTICE 'Updated salary for employee % to $%', p_emp_no, p_salary;
 END;
 $_$;
 

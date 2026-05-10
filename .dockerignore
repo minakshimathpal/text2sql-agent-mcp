@@ -1,0 +1,60 @@
+# Exclude heavy folders from Docker image
+**/__pycache__
+**/.venv
+**/.git
+**/.ipynb_checkpoints
+**/hf_cache
+**/node_modules
+
+# Exclude local database data
+**/postgres-data
+**/mysql-data
+
+# Exclude large model weights and research artifacts
+Agent/Gemma3_1B_weights
+Agent/merged_gemma1b_text2Sql
+Agent/merged_gemma3_1b_text2Sql
+Agent/Qwen2.5_3b_weights
+Agent/Qwen2.5-3B-Instruct
+merged_qwen2_5_3b_text2sql
+merged_gemma3_1b_text2sql
+.venv-merge/
+
+# Exclude all Jupyter Notebooks EXCEPT the proof-of-work notebook
+**/*.ipynb
+!Fine_Tuning_Qwen_2_5_3B.ipynb
+**/.ipynb_checkpoints
+
+# Exclude redundant project clutter
+backups/
+debug_files/
+test_files/
+test_results/
+dump-mysql.bat
+dump-postgres.bat
+agentic_improvements.md
+invariants_analysis.md
+progress_summary.txt
+mcp_server.log
+merge.log
+response.json
+run-dev.ps1
+setup_ollama.bat
+
+
+# Exclude experimental/redundant Python scripts
+Agent/trial*.py
+Agent/test*.py
+Agent/old_*.py
+Agent/OLLAMA_GPU_NOTES.md
+**/debug_*.py
+
+# Exclude local uploads and generated files (keep empty folder)
+chat_store/docs/*
+!uploads/.gitkeep
+
+# Exclude local logs and IDE settings
+*.log
+.env.local
+.vscode/
+.idea/

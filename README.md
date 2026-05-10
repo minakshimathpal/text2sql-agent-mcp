@@ -1,239 +1,189 @@
-# Text-to-SQL Agent with Multi-Agent Workflow
+# Enterprise Text-to-SQL & Document VQA Multi-Agent System
 
-A sophisticated text-to-SQL conversion system that uses a three-agent workflow to process natural language queries and convert them into executable SQL statements. The system includes memory capabilities to remember previous conversations and provide consistent responses.
+![Architecture](https://img.shields.io/badge/Architecture-Multi--Agent-blue)
+![Database](https://img.shields.io/badge/Database-Agnostic-success)
+![LLM](https://img.shields.io/badge/LLMs-Qwen%20%7C%20Ollama-orange)
+![Protocol](https://img.shields.io/badge/Protocol-MCP-purple)
 
-## 🚀 Features
+An advanced, hardware-optimized AI pipeline built on a multi-agent orchestration architecture. This system seamlessly integrates natural language Text-to-SQL generation with a powerful Vision-Language Model (VLM) for Optical Character Recognition (OCR) and Visual Question Answering (VQA).
 
-- **Multi-Agent Architecture**: Three specialized agents working together
-- **Memory System**: Remembers previous conversations and queries
-- **Database Agnostic**: Supports PostgreSQL, MySQL, SQLite, MS SQL Server, and Oracle
-- **Query Validation**: Validates SQL queries before execution
-- **Conversational Interface**: Natural language responses
-- **Session Management**: Maintains conversation context across sessions
-- **Error Handling**: Graceful handling of database errors and edge cases
-
-## 🏗️ Architecture
-
-### Agent Workflow
-
-1. **MemoryAgent**: 
-   - Checks if the query can be answered from previous conversations
-   - Provides consistent responses to previously addressed queries
-   - Rephrases unclear queries using context
-   - Routes new questions to specialized agents
-
-2. **QueryCraftAgent**:
-   - Explores database structure systematically
-   - Generates optimized SQL queries based on user intent
-   - Validates execution plans for efficiency
-   - Ensures proper constraints and data retrieval
-
-3. **ResultPresenterAgent**:
-   - Executes validated SQL queries
-   - Translates technical results into conversational responses
-   - Handles edge cases gracefully
-   - Stores results in conversation history
-
-## 📋 Prerequisites
-
-- Python 3.8+
-- Database connection (PostgreSQL, MySQL, SQLite, MS SQL Server, or Oracle)
-- Azure OpenAI API access (or Ollama for local models)
-
-## 🛠️ Installation
-
-1. **Clone the repository**:
-   ```bash
-   git clone <repository-url>
-   cd text2sql-agent-mcp
-   ```
-
-2. **Install dependencies**:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-3. **Set up environment variables**:
-   Create a `.env` file in the project root:
-   ```env
-   # Database Configuration
-   DB_CONNECTION_URL=your_database_connection_string
-   
-   # Azure OpenAI Configuration
-   AZURE_OPENAI_MODEL_NAME=llama3.1:8b
-   AZURE_OPENAI_ENGINE_NAME=gpt-4o-mini
-   
-   # Ollama Configuration (for local models)
-   OLLAMA_BASE_URL=http://localhost:11434
-   OLLAMA_MODEL_NAME=llama3.1:8b
-   ```
-
-## 🚀 Usage
-
-### Running the Application
-
-```bash
-python Agent/trial1.py
-```
-
-### Example Queries
-
-Once the application is running, you can ask questions like:
-
-- "What badge did most users earn?"
-- "How many users have earned badges?"
-- "What is the average rating of posts?"
-- "Show me all users who joined in the last month"
-- "Which posts have the highest engagement?"
-
-### Interactive Session
-
-The application provides an interactive command-line interface:
-
-```
-Welcome to the SQL Assistant! Type 'quit' to exit.
-You can ask questions about the database, and I'll help you find the answers.
-
-Your question: What badge did most users earn?
-
-==================================================
-🤖 Agent: MemoryAgent
-==================================================
-
-==================================================
-🤖 Agent: QueryCraftAgent
-==================================================
-
-==================================================
-🤖 Agent: ResultPresenterAgent
-==================================================
-
-Answer: Based on the database results, the most commonly earned badge is...
-
-What else would you like to know?
-```
-
-## 🔧 Configuration
-
-### Database Connection
-
-The system supports various database types through SQLAlchemy:
-
-- **PostgreSQL**: `postgresql://user:password@host:port/dbname`
-- **MySQL**: `mysql://user:password@host:port/dbname`
-- **SQLite**: `sqlite:///path/to/database.db`
-- **MS SQL Server**: `mssql://user:password@host:port/dbname`
-- **Oracle**: `oracle://user:password@host:port/dbname`
-
-### Model Configuration
-
-You can configure different LLM providers:
-
-- **Azure OpenAI**: Set `AZURE_OPENAI_MODEL_NAME` and `AZURE_OPENAI_ENGINE_NAME`
-- **Ollama (Local)**: Set `OLLAMA_BASE_URL` and `OLLAMA_MODEL_NAME`
-
-## 📁 Project Structure
-
-```
-text2sql-agent-mcp/
-├── Agent/
-│   └── trial1.py          # Main application file
-├── chat_store_public.json # Public conversation history
-├── chat_store_private.json # Private conversation history
-├── .env                   # Environment variables
-├── requirements.txt       # Python dependencies
-└── README.md             # This file
-```
-
-## 🔍 Key Components
-
-### Database Functions
-
-- `initialize_database()`: Sets up database connection and metadata
-- `list_tables()`: Retrieves available tables
-- `describe_tables()`: Gets detailed table schemas
-- `load_data()`: Executes SQL queries and returns results
-- `validate_sql_query()`: Validates SQL syntax and execution plans
-
-### Context Management
-
-- `fetch_context()`: Retrieves conversation history and current state
-- `update_context()`: Stores new queries and results
-- `get_chat_history()`: Manages session persistence
-
-### Agent Tools
-
-Each agent has access to specific tools:
-
-- **MemoryAgent**: `fetch_context`
-- **QueryCraftAgent**: `validate_sql_query`, `describe_tables`, `list_tables`
-- **ResultPresenterAgent**: `load_data`, `feedback`, `update_context`
-
-## 🛡️ Error Handling
-
-The system includes comprehensive error handling:
-
-- Database connection failures
-- Invalid SQL queries
-- Missing tables or columns
-- Network timeouts
-- Model API errors
-
-## 🔄 Session Management
-
-- **Session IDs**: Unique identifiers for each conversation
-- **Chat History**: Persistent storage of conversations
-- **State Management**: Maintains context across agent interactions
-- **Memory Persistence**: Stores conversations in JSON files
-
-## 🚨 Troubleshooting
-
-### Common Issues
-
-1. **Database Connection Failed**:
-   - Verify `DB_CONNECTION_URL` in `.env`
-   - Check database server status
-   - Ensure proper credentials
-
-2. **Model API Errors**:
-   - Verify Azure OpenAI credentials
-   - Check model name and engine configuration
-   - Ensure API quota is available
-
-3. **File Permission Errors**:
-   - Ensure write permissions for chat store directory
-   - Check file paths in configuration
-
-### Debug Mode
-
-Enable verbose logging by setting `verbose=True` in agent configurations.
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
-
-## 📄 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## 🙏 Acknowledgments
-
-- Built with LlamaIndex for agent orchestration
-- Uses SQLAlchemy for database operations
-- Powered by Azure OpenAI for natural language processing
-- Inspired by modern conversational AI systems
-
-## 📞 Support
-
-For issues and questions:
-- Create an issue in the repository
-- Check the troubleshooting section
-- Review the error logs for specific details
+By leveraging the **Model Context Protocol (MCP)**, local LLMs via Ollama, and intelligent memory management, this project achieves state-of-the-art data extraction and database querying running entirely locally within tight memory constraints.
 
 ---
 
-**Note**: This system is designed for educational and research purposes. Always ensure proper security measures when connecting to production databases. 
+## Key Features
+
+- **Multi-Agent Orchestration:** A dynamic routing system featuring specialized agents (`MemoryAgent`, `QueryCraftAgent`, `ResultPresenterAgent`).
+- **Vision-Language Q&A (VQA):** Integrates **Qwen 3.5 2B Vision** for highly accurate data extraction from complex documents (e.g., Invoices, unstructured tables) directly via Ollama.
+- **Advanced Text-to-SQL:** Utilizes **Qwen 2.5 Coder 1.5B** to translate complex natural language questions into syntactically valid SQL queries, executing them securely against local databases.
+- **Dynamic Memory Management:** Custom algorithms automatically swap models in and out of GPU VRAM to prevent Out-Of-Memory (OOM) crashes, enabling heavy AI workloads on consumer hardware.
+- **Database Agnostic:** Designed to interface seamlessly with PostgreSQL, MySQL, SQLite, MS SQL Server, and Oracle.
+- **Conversational Interface:** Full Web UI for natural language interactions, maintaining context across sessions.
+
+---
+
+## System Architecture & Agentic Workflow
+
+The project utilizes a decoupled, asynchronous microservices architecture. The Web UI communicates with a backend worker, which in turn orchestrates requests via the Model Context Protocol (MCP).
+
+### The Three-Agent Triad
+
+Our orchestration is built upon three highly specialized agents working in sequence:
+
+1. **MemoryAgent:** 
+   - Acts as the first layer of defense.
+   - Checks if the user's query can be answered using historical context.
+   - Rephrases ambiguous queries based on past interactions.
+   - Routes new questions to the appropriate downstream agent.
+2. **QueryCraftAgent (The 3-Level Text-to-SQL Engine):**
+   - The core logic engine for SQL generation, utilizing a sophisticated 3-Level execution architecture:
+     - **Level 1 (Pure LLM Intelligence):** Zero-shot semantic translation of natural language to raw SQL using Qwen 2.5 Coder.
+     - **Level 2 (LLM + SQL Fixer Enhancement):** An autonomous self-reflection loop where the agent catches its own syntax errors and rewrites the query.
+     - **Level 3 (LLM + MCP Hint + SQL Fixer):** The deepest reasoning level, where the agent actively uses MCP tools to introspect live database schemas (tables, columns, foreign keys) to ground its SQL generation in absolute reality before executing the Fixer loop.
+3. **ResultPresenterAgent:**
+   - Executes the validated SQL via the MCP Tool Server.
+   - Translates raw, technical SQL results into natural, conversational responses.
+   - Handles edge cases and updates the persistent conversation history.
+
+### Multi-Agent Orchestration Flowchart
+
+```mermaid
+graph TD
+    User([User Query / Upload]) --> API[FastAPI Gateway]
+    API --> Orchestrator{Agent Orchestrator}
+    
+    Orchestrator -->|Image Upload| VQA[VQA Engine]
+    VQA --> Result([Final Answer])
+    
+    Orchestrator -->|Text Query| Memory[MemoryAgent]
+    Memory -->|Context Found| Presenter[ResultPresenterAgent]
+    Memory -->|New Query| QueryCraft[QueryCraftAgent]
+    
+    QueryCraft -->|Schema Context| OllamaSQL[(Qwen 2.5 Coder)]
+    OllamaSQL -->|Raw SQL| MCP[Model Context Protocol]
+    MCP --> DB[(Enterprise Database)]
+    
+    DB -->|Result Set| Presenter
+    Presenter --> Result
+```
+
+### Detailed MCP Orchestration Flow (Vision/OCR Pipeline)
+
+To handle memory constraints while executing heavy Visual QA tasks, the system dynamically unloads models and delegates image processing to the MCP Tool Server.
+
+```text
+         Qwen 3.5 2B (OCR Q&A mode)
+        │
+    Worker /query
+        │  image .img_path found?
+        ├─ YES → ocr_agent_qa()
+        │         │
+        │         ├─ unload QwenCoder Text-To-SQL (free GPU VRAM)
+        │         │
+        │         └─ mcp_call_tool("granite_vision.qa", {image, question})
+        │                   │
+        │               MCP Server (port 8701)
+        │                   │
+        │               granite_vision.qa tool (HTTP Proxy)
+        │                   │
+        │               Qwen 3.5 2B (Ollama C++ Backend)
+        │                   │
+        │               ← Answer Dict Extracted
+        │
+        └─ NO (old doc) → Tesseract Text → Gemma3 Fallback (unchanged)
+```
+
+---
+
+## Technology Stack
+
+- **Core Framework:** Python 3.10+, FastAPI, Uvicorn
+- **AI Orchestration:** LlamaIndex, Model Context Protocol (MCP)
+- **Local Inference Engine:** Ollama (C++ Optimized, Memory Mapped)
+- **Models Used:** 
+  - `qwen2.5-coder:1.5b` (For expert-level SQL syntax generation)
+  - `qwen3.5:2b` (For robust Visual Q&A and OCR formatting)
+- **Database ORM:** SQLAlchemy
+
+---
+
+## Research & Fine-Tuning: Comparative Analysis
+
+As part of the project's rigorous scientific methodology, a custom foundational model fine-tuning pipeline was developed. 
+
+1. **LoRA Fine-Tuning:** The base **Qwen 2.5 3B** model was fine-tuned using Low-Rank Adaptation (LoRA) on a specialized Text-to-SQL dataset.
+2. **Weight Merging:** The LoRA adapters were successfully merged back into the base model weights (`merge_qwen_to_ollama.py`) and quantized for local deployment.
+3. **A/B Testing & Evaluation:** During the validation phase, the fine-tuned general model was benchmarked against the highly specialized `qwen2.5-coder:1.5b`. 
+4. **Engineering Decision:** The benchmark revealed that the zero-shot capabilities of the Coder model (which is heavily pre-trained on billions of lines of code and SQL) yielded higher syntactical accuracy and faster inference speeds than the generalized LoRA fine-tune. Therefore, the production architecture was optimized to leverage the Coder model, demonstrating a practical, data-driven engineering decision prioritizing system reliability.
+
+*(See `Fine_Tuning_Qwen_2_5_3B.ipynb` and the `merged_qwen2_5_3b_text2sql` directories for the fine-tuning methodology.)*
+
+---
+
+## Installation & Setup
+
+### Prerequisites
+- [Ollama](https://ollama.com/) installed and running locally
+- Python 3.10+
+- Database connection (PostgreSQL, MySQL, SQLite)
+
+### 1. Model Initialization
+Pull the required highly-optimized models into Ollama:
+```bash
+ollama pull qwen2.5-coder:1.5b
+ollama pull qwen3.5:2b
+```
+
+### 2. Environment Configuration
+Install dependencies:
+```bash
+pip install -r requirements.txt
+```
+Create a `.env` file in the `Agent/` directory containing your database credentials:
+```env
+DB_CONNECTION_URL=postgresql://user:password@localhost:5432/dbname
+OLLAMA_MODEL_NAME=qwen2.5-coder:1.5b
+GRANITE_MODEL_PATH=qwen3.5:2b
+```
+
+### 3. Running the Pipeline
+The architecture requires three microservices running in parallel for decoupled processing.
+
+**Terminal 1 (Backend Worker):**
+```bash
+python -u -m uvicorn "Agent.worker:app" --port 8700
+```
+**Terminal 2 (MCP Tool Server):**
+```bash
+python -m uvicorn "Agent.mcp_server:app" --port 8701
+```
+**Terminal 3 (Web UI):**
+```bash
+python -m uvicorn "web.app:app" --port 8000
+```
+Navigate to `http://localhost:8000` to interact with the multi-agent system!
+
+---
+
+## Docker Containerization (Optional)
+
+To run the entire system in a robust, containerized environment:
+
+1. Ensure Docker and Docker Compose are installed.
+2. Build and start the services:
+```bash
+docker-compose up --build
+```
+*(Note: Ensure your `docker-compose.yml` maps the Ollama port `11434` properly so the containers can reach your local LLMs, or install Ollama directly inside the container network.)*
+
+## Deployment Pipeline (HuggingFace Spaces)
+
+To deploy this application to **HuggingFace Spaces**:
+1. Create a new Space and select **Docker** as the SDK.
+2. Upload this repository.
+3. Configure the Space hardware to an instance with at least **16GB RAM** (or a T4 GPU).
+4. Add `DB_CONNECTION_URL` to the HuggingFace Secrets.
+5. HuggingFace will automatically build the Docker container and host the Web UI publically. 
+
+---
+*Built with ❤️ for advanced Agentic Data Engineering.*
