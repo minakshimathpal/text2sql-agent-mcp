@@ -182,7 +182,7 @@ See `Fine_Tuning_Qwen_2_5_3B.ipynb` and the `merged_qwen2_5_3b_text2sql` directo
 
 | Component | Technology |
 |---|---|
-| Core Framework | Python 3.10+, FastAPI, Uvicorn |
+| Core Framework | Python 3.11+, FastAPI, Uvicorn |
 | AI Orchestration | LlamaIndex, Model Context Protocol (MCP) |
 | Local Inference | Ollama (C++ optimized, memory-mapped) |
 | Text-to-SQL Model | qwen2.5-coder:1.5b |
