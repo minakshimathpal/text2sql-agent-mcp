@@ -198,7 +198,7 @@ See `Fine_Tuning_Qwen_2_5_3B.ipynb` and the `merged_qwen2_5_3b_text2sql` directo
 ### Prerequisites
 
 - Ollama installed and running on the host machine
-- Python 3.10 or higher
+- Python 3.11 or higher
 - Docker and Docker Compose
 - A supported database (PostgreSQL or MySQL)
 
