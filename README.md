@@ -96,7 +96,7 @@ The system is implemented as a Dockerized microservices architecture, with each 
 
 ### Native-Bridge Hybrid Offloading
 
-For peak inference performance, the system uses a hybrid offloading strategy. The application logic and MCP servers run inside Docker containers for portability and isolation, while Ollama and all GPU inference are offloaded to the native Windows host and accessed by the containers over the WSL2 host bridge network (`OLLAMA_BASE_URL=http://172.27.224.1:11434`).
+For peak inference performance, the system uses a hybrid offloading strategy. The application logic and MCP servers run inside Docker containers for portability and isolation, while Ollama and all GPU inference are offloaded to the native Windows host and accessed by the containers over the WSL2 host bridge network (`OLLAMA_BASE_URL=http://<wsl2-host-ip>:11434`).
 
 This architecture eliminates the virtualization overhead introduced by Docker Desktop's Linux VM layer. By giving the inference engine direct access to NVIDIA CUDA cores and the full system memory pool — rather than a virtualized slice — the 1.5B parameter model achieves response times measured in seconds rather than minutes. The separation also means that GPU memory pressure from Ollama does not compete with the container's allocated memory ceiling.
 
