@@ -256,12 +256,271 @@ The database containers include health checks and will be fully initialized befo
 
 ## Deployment on HuggingFace Spaces
 
-1. Create a new Space and select Docker as the SDK.
-2. Upload this repository.
-3. Configure the Space to an instance with at least 16GB RAM, or a T4 GPU tier.
-4. Add `DB_CONNECTION_URL` and Ollama model configuration to the Space Secrets.
-5. In the Dockerfile, uncomment the Ollama installation line to run inference inside the container rather than offloading to a host.
-6. HuggingFace will build the Docker image and serve the Web UI publicly.
+This section documents the **complete deployment journey** — from the first proof-of-concept tunnel approach to the final production-ready hybrid architecture. Each phase is explained with commands and rationale so this can serve as a reference for deploying any multi-modal AI application on HuggingFace Spaces.
+
+---
+
+### Understanding HuggingFace Spaces Constraints
+
+Before choosing a deployment strategy, it is essential to understand what the free tier of HuggingFace Spaces provides and restricts:
+
+| Resource | Free Tier |
+|----------|-----------|
+| CPU | 2 vCPUs |
+| RAM | 16 GB |
+| GPU | None |
+| Storage | Ephemeral (wiped on restart) |
+| Public port | 7860 only |
+| Timeout | Space sleeps after inactivity |
+
+The key challenge: **running a local LLM (e.g. `qwen2.5-coder:1.5b`) via Ollama consumes ~1.5–3 GB RAM, leaving limited headroom for vision models and the application stack.** Running a vision-language model such as `qwen3.5:2b` (~3 GB) alongside the text model causes out-of-memory (OOM) failures on the free CPU tier.
+
+---
+
+### Phase 1 — Cloudflare Tunnel: Bridging Local Resources to the Cloud
+
+#### Theory
+
+The simplest approach to deploy a resource-intensive app on HF Spaces is to **not run the heavy models in the cloud at all**. Instead, you run the LLM and VLM locally on your development machine and expose the Ollama API endpoint to the internet via a secure tunnel. The HF Space container merely hosts the web frontend and proxies inference requests back to your local machine.
+
+This approach has zero cloud compute cost and allows full GPU acceleration locally. However, it requires your development machine to remain **online and running at all times**, making it unsuitable for a persistent public demo.
+
+#### Setup
+
+**Step 1: Install Cloudflared on your local machine**
+```bash
+# Windows (via winget)
+winget install Cloudflare.cloudflared
+
+# Or download directly
+# https://github.com/cloudflare/cloudflared/releases
+```
+
+**Step 2: Start Ollama locally**
+```bash
+ollama serve
+# Ollama now listens on http://localhost:11434
+```
+
+**Step 3: Create a public tunnel to your local Ollama port**
+```bash
+cloudflared tunnel --url http://localhost:11434
+```
+
+Cloudflared will print a public HTTPS URL like:
+```
+https://your-random-id.trycloudflare.com
+```
+
+**Step 4: Set the tunnel URL as a secret in your HF Space**
+
+In the HF Space settings under **Variables and Secrets**, add:
+```
+OLLAMA_BASE_URL = https://your-random-id.trycloudflare.com
+```
+
+The application code reads `OLLAMA_BASE_URL` and routes all inference calls through the tunnel to your local GPU.
+
+#### Limitation
+
+- The tunnel URL changes every time `cloudflared` restarts, requiring a secret update.
+- Requires a continuously running local machine.
+- Not viable for a shared capstone demo or public deployment.
+
+---
+
+### Phase 2 — Self-Contained Docker: Running Ollama Inside the Container
+
+#### Theory
+
+The next evolution is to **embed Ollama directly into the Docker image** and pull models at container startup. This makes the deployment fully self-contained — no external machine is needed. The HF Space container becomes a complete inference server.
+
+The challenge is that HF Spaces rebuilds the Docker image on every push but does **not cache downloaded model weights** between restarts (storage is ephemeral). This means every **Factory Reboot** triggers a fresh ~1–3 GB model download, causing a cold-start delay of 2–5 minutes.
+
+To prevent HF's health monitor from timing out the Space during this download, model pulling is performed **asynchronously in the background**, allowing the web UI to become responsive immediately while the model fetches in parallel.
+
+#### Dockerfile Changes
+
+Add Ollama installation to the `Dockerfile`:
+
+```dockerfile
+# Install Ollama binary (pinned to a stable release)
+RUN curl -L https://github.com/ollama/ollama/releases/download/v0.5.11/ollama-linux-amd64.tgz \
+    -o ollama.tgz && \
+    tar -C /usr -xzf ollama.tgz && \
+    rm ollama.tgz
+```
+
+#### Startup Script (`start_hf.sh`)
+
+```bash
+#!/bin/bash
+export HOME=/root
+
+echo "[HF-INIT] Starting Ollama server..."
+ollama serve &
+OLLAMA_PID=$!
+
+# Wait for Ollama to become healthy (up to 20 attempts)
+for i in $(seq 1 20); do
+    if curl -sf http://localhost:11434/api/tags > /dev/null 2>&1; then
+        echo "[HF-INIT] Ollama is ALIVE!"
+        break
+    fi
+    echo "[HF-INIT] Waiting... ($i/20)"
+    sleep 3
+done
+
+# Pull the text model asynchronously (non-blocking)
+echo "[HF-INIT] Pulling qwen2.5-coder:1.5b in background..."
+ollama pull qwen2.5-coder:1.5b &
+
+# Start application services immediately (do not wait for model pull)
+echo "[HF-INIT] Starting Backend Worker..."
+python -m uvicorn Agent.worker:app --host 0.0.0.0 --port 8700 &
+
+echo "[HF-INIT] Starting MCP Tool Server..."
+python -m uvicorn Agent.mcp_server:app --host 0.0.0.0 --port 8701 &
+
+echo "[HF-INIT] Starting Web UI on port 7860..."
+exec python -m uvicorn web.app:app --host 0.0.0.0 --port 7860
+```
+
+The `&` (ampersand) operator sends the model pull to the background. The `exec` on the last line replaces the shell process with the web server, ensuring HF's process monitor tracks the correct PID.
+
+#### Limitation
+
+- **Vision model OOM**: Adding `qwen3.5:2b` alongside `qwen2.5-coder:1.5b` exceeds the 16 GB RAM limit when both are loaded simultaneously.
+- Model weights are re-downloaded on every Factory Reboot.
+- Ollama version pinning is critical — newer models require newer Ollama binaries and pulling the wrong combination causes `412` errors.
+
+---
+
+### Phase 3 — Hybrid Serverless API (Final Production Architecture)
+
+#### Theory
+
+The final and most robust architecture eliminates the in-container LLM entirely for text generation and uses **external serverless inference APIs** instead. The container only runs lightweight services (web UI, API proxy, Tesseract OCR), while all neural inference is delegated to dedicated providers:
+
+| Task | Provider | Model | Cost |
+|------|----------|-------|------|
+| Text-to-SQL | HuggingFace Inference API | `Qwen/Qwen2.5-Coder-7B-Instruct` | Free tier |
+| Vision Q&A | Groq API | `meta-llama/llama-4-scout-17b-16e-instruct` | Free (14,400 req/day) |
+| OCR | Tesseract (in container) | — | Free |
+| Database | Neon PostgreSQL | — | Free tier |
+
+This eliminates OOM risk entirely, removes the model download cold-start, and makes the container startup under 30 seconds.
+
+#### Why Groq for Vision Instead of HuggingFace Serverless?
+
+HuggingFace's serverless inference for vision-language models has two limitations on the free tier:
+1. Most VLM models are not routed through any enabled provider for free-tier accounts.
+2. Google Gemini's free tier blocks requests originating from cloud datacenter IP ranges (such as HF's infrastructure), setting the effective quota to zero even for valid free-tier API keys.
+
+**Groq** is purpose-built for API-first server deployments and explicitly allows free-tier requests from cloud IPs. It provides 14,400 free requests per day with no IP restrictions.
+
+#### Required HuggingFace Space Secrets
+
+Set these in **Space Settings → Variables and Secrets**:
+
+```
+USE_HF_CLOUD       = 1
+HF_API_TOKEN       = # HuggingFace access token
+GROQ_API_KEY       = # From console.groq.com (free)
+DB_CONNECTION_URL  = # Neon PostgreSQL connection string
+```
+
+#### Obtaining API Keys
+
+**HuggingFace Token:**
+1. Go to https://huggingface.co/settings/tokens
+2. Create a token with `read` scope (or `write` if you need to push models)
+
+**Groq API Key:**
+1. Go to https://console.groq.com
+2. Sign in with Google / GitHub
+3. Navigate to **API Keys** → **Create API Key**
+4. Copy the key
+
+**Neon PostgreSQL:**
+1. Go to https://neon.tech
+2. Create a free project
+3. Copy the connection string from the dashboard
+
+#### Slim Dockerfile (No Ollama Required)
+
+```dockerfile
+FROM python:3.11-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ENV USE_HF_CLOUD=1
+
+RUN apt-get update && apt-get install -y \
+    curl \
+    tesseract-ocr \
+    libtesseract-dev \
+    gcc \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
+USER appuser
+
+CMD ["bash", "start_hf.sh"]
+```
+
+#### Key `requirements.txt` Additions
+
+```txt
+huggingface_hub      # HF Inference API client
+groq>=0.9.0          # Groq Vision API client
+google-genai>=1.0.0  # Optional: Google Gemini (requires billing for cloud IPs)
+pytesseract>=0.3.10  # Local OCR fallback
+pillow>=10.0.0
+```
+
+#### Deployment Steps
+
+1. **Create a HuggingFace Space** at https://huggingface.co/spaces
+   - SDK: **Docker**
+   - Visibility: Public or Private
+
+2. **Push your repository** to the Space's git remote:
+   ```bash
+   git remote add space https://huggingface.co/spaces/<your-username>/<space-name>
+   git push space main
+   ```
+
+3. **Add secrets** in Space Settings (see table above). Do **not** hardcode secrets in the Dockerfile or any committed file.
+
+4. **Factory Reboot** the Space after adding secrets to trigger a clean rebuild with the new environment variables.
+
+5. **Monitor the build logs** — a successful startup shows:
+   ```
+   [GRANITE_VQA] Target Model: meta-llama/llama-4-scout-17b-16e-instruct (via Groq Vision)
+   [INFO] CLOUD MODE: Initializing Official HF InferenceClient (Qwen/Qwen2.5-Coder-7B-Instruct)
+   INFO: Uvicorn running on http://0.0.0.0:7860
+   ```
+
+#### Important Notes on Line Endings
+
+HuggingFace containers run Linux. If you develop on Windows, your shell scripts will have `\r\n` (CRLF) line endings, which cause `bad interpreter` errors on Linux. Add this to your `Dockerfile` to strip them automatically:
+
+```dockerfile
+RUN sed -i 's/\r$//' start_hf.sh && chmod +x start_hf.sh
+```
+
+Alternatively, configure Git to normalize line endings:
+```bash
+git config core.autocrlf input
+```
+
 
 ---
 
