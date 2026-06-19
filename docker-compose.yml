@@ -1,74 +1,49 @@
 version: '3.8'
 
 services:
-  # Main Agentic Application
-  agent-app:
-    build: .
-    container_name: text2sql-agent-app
-    restart: unless-stopped
-    env_file: Agent/.env
-    environment:
-      - OLLAMA_BASE_URL=http://172.27.224.1:11434
-      - LLM_CTX=4096
-    deploy:
-      resources:
-        limits:
-          cpus: '2.0'
-          memory: 4G
-    ports:
-      - "8000:8000"
-      - "8700:8700"
-      - "8701:8701"
-    depends_on:
-      employee-postgres:
-        condition: service_healthy
-      employee-mysql:
-        condition: service_healthy
-    volumes:
-      - ./Agent:/app/Agent
-      - ./web:/app/web
-    networks:
-      - employee-net
-
-  # MySQL Database
   employee-mysql:
     image: mysql:8.0
     container_name: employee-mysql
     restart: unless-stopped
-    env_file: Agent/.env
+    env_file: .env
     ports:
-      - "${MYSQL_PORT:-3306}:3306"
+      - "${MYSQL_PORT}:3306"
     volumes:
       - ./employee-sample-database/mysql/dataset_small:/docker-entrypoint-initdb.d
       - mysql-data:/var/lib/mysql
     networks:
       - employee-net
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "--silent"]
-      interval: 5s
-      timeout: 5s
-      retries: 12
-      start_period: 30s
 
-  # PostgreSQL Database
   employee-postgres:
     image: postgres:15
     container_name: employee-postgres
     restart: unless-stopped
-    env_file: Agent/.env
+    env_file: .env
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "${POSTGRES_PORT}:5432"
     volumes:
       - ./employee-sample-database/postgres/dataset_small:/docker-entrypoint-initdb.d
       - postgres-data:/var/lib/postgresql/data
     networks:
       - employee-net
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-postgres}"]
-      interval: 5s
-      timeout: 5s
-      retries: 12
-      start_period: 30s
+
+  imdb-mysql:
+    image: mysql:8.0
+    container_name: imdb-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: imdb
+    
+    ports:
+      - "${IMDB_MYSQL_PORT:-56583}:3306"
+    
+    volumes:
+      - ./Db-IMDB-Assignment:/docker-entrypoint-initdb.d
+      - imdb-mysql-data:/var/lib/mysql
+    
+    networks:
+      - employee-net
 
 volumes:
   mysql-data:
