@@ -1,3 +1,20 @@
+# Local Models and Weights
+Agent/*_weights/
+Agent/Qwen*/
+Agent/Gemma*/
+Agent/merged_*/
+merged_*/
+*.bin
+*.gguf
+*.onnx
+
+# Data and History
+chat_store/
+Agent/chat_store_private.json
+
+# Docker and DB
+docker/data/
+
 # Python
 __pycache__/
 *.py[cod]
@@ -10,6 +27,8 @@ __pycache__/
 # Virtual environments
 venv/
 .env
+.env*
+!.env.example
 
 # Jupyter Notebook checkpoints
 .ipynb_checkpoints/
@@ -24,6 +43,3 @@ Thumbs.db
 # VS Code / IDEs
 .vscode/
 .idea/
-
-# SQLite DB (if you're okay regenerating)
-*.sqlite
